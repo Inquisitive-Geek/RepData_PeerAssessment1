@@ -7,19 +7,66 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+activity <- read.csv('activity.csv')
+```
 
 ## What is mean total number of steps taken per day?
-
-
+```{r}
+daily_steps <- aggregate(steps~date,activity, FUN=sum)
+mean_steps <- mean(daily_steps$steps, na.rm = TRUE)
+median_steps <- median(daily_steps$steps, na.rm = TRUE)
+```
+The mean total number of steps taken per day is `r mean_steps`. The median total number of steps taken per day is `r median_steps`. 
+The histogram of the total number of steps taken each day is as follows.
+```{r}
+hist(daily_steps$steps, xlab="Daily Steps", main="Histogram of daily steps")
+```
 
 ## What is the average daily activity pattern?
-
-
+The average daily pattern plot is shown below.
+```{r}
+daily_pattern <- aggregate(steps~interval,activity, FUN=mean)
+plot(daily_pattern$interval,daily_pattern$steps, type ="l",xlab="Interval",ylab="Mean daily steps")
+max_daily_pattern <- max(daily_pattern$steps)
+```
+The maximum number of steps taken on average during an interval is `r max_daily_pattern`.
 
 ## Imputing missing values
-
-
+```{r}
+na_rows_num <- nrow(activity[activity$steps=='NA', ])
+```
+The number of rows with missing values is `r na_rows_num`.
+The imputing strategy is using the mean value of the particular interval and using it to populate the corresponding activity value.
+```{r}
+for (i in 1:nrow(activity)){
+  if (is.na(activity$steps[i])){
+    x = which(activity[i,3] == daily_pattern$interval)
+    if (length(x)==0){
+      activity$steps[i] = 0
+    }
+    else
+    {
+      activity[i,1] = floor(daily_pattern[x,2])
+    }
+  }
+}
+daily_steps_new <- aggregate(steps~date,activity, FUN=sum)
+mean_steps_updated <- mean(daily_steps_new$steps)
+median_steps_updated <- median(daily_steps_new$steps)
+```
+The updated mean number of daily steps is `r mean_steps_updated` and the updated median number of daily steps is `r median_steps_updated`.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+library(chron)
+activity$day_type = ifelse(is.weekend(as.Date(activity$date)),"weekend","weekday")
+library(lattice)
+activity <- transform(activity, day_type = factor(day_type))
+daily_pattern_new <- aggregate(steps~day_type*interval,activity, FUN=mean)
+xyplot(steps ~ interval | day_type, data = daily_pattern_new, layout=c(1,2), type = "l")
+```
+
+```{r}
+
+```
